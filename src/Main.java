@@ -1,14 +1,25 @@
+package src;
 import java.util.*;
-import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Main {
 
     static Scanner sc = new Scanner(System.in);
 
     public static void main(String[] args) {
+
+    try (
+        Connection con = Conexao.conectar();
+    ) {
+        System.out.println("Conexão bem-sucedida!");
+
+    } catch (Exception e) {
+        System.out.println("Erro: " + e.getMessage());
+        throw new RuntimeException(e);
+    }
 
         while (true) {
             System.out.println("\n=== SISTEMA SAÚDE ===");
@@ -98,27 +109,32 @@ public class Main {
     // VERIFICAÇÃO (MENU TEM Q IDENTIFICAR SE É PCT OU PROFISSIONAL P/ MOSTRAR O MENU CORRETO)
     public static boolean verificarProfissional(String login, String senha) {
         String sql = "SELECT * FROM profissionais WHERE login = ? AND senha = ?";
-        try (Connection conn = Connection.connect();
+        try (Connection conn = Conexao.conectar();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, login);
                 stmt.setString(2, senha);
                 ResultSet rs = stmt.executeQuery();
                 return rs.next(); 
-        } catch (SQLException e) {
-            System.out.println("Erro ao verificar profissional: " + e.getMessage());
+        } catch (Exception e) {
+            if (e instanceof SQLException) {
+                System.out.println("Erro ao acessar o banco de dados: " + e.getMessage());
+            } else {
+                System.out.println("Erro inesperado: " + e.getMessage());
+            }
+           
         }
         return false;
     }
 
     public static boolean verificarPaciente(String login, String senha) {
         String sql = "SELECT * FROM pacientes WHERE login = ? AND senha = ?";
-        try (Connection conn = Connection.connect();
+        try (Connection conn = Conexao.conectar();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, login);
                 stmt.setString(2, senha);
                 ResultSet rs = stmt.executeQuery();
                 return rs.next(); 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             System.out.println("Erro ao verificar paciente: " + e.getMessage());
         }
         return false;
@@ -126,14 +142,18 @@ public class Main {
 
     public static boolean loginExiste(String login) {
         String sql = "SELECT * FROM profissionais WHERE login = ? UNION SELECT * FROM pacientes WHERE login = ?";
-        try (Connection conn = Connection.connect();
+        try (Connection conn = Conexao.conectar();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, login);
                 stmt.setString(2, login);
                 ResultSet rs = stmt.executeQuery();
                 return rs.next(); 
-        } catch (SQLException e) {
-            System.out.println("Erro ao verificar login: " + e.getMessage());
+        } catch (Exception e) {
+            if (e instanceof SQLException) {
+                System.out.println("Erro ao acessar o banco de dados: " + e.getMessage());
+            } else {
+                System.out.println("Erro inesperado: " + e.getMessage());
+            }
         }
 
         return false;
@@ -203,7 +223,6 @@ public class Main {
         System.out.println("Erro: " + e.getMessage());
     }
 }
-    }
     // LISTAR PACIENTES
   public static void listarPacientesParaEscolha() {
 
@@ -306,7 +325,6 @@ public class Main {
         System.out.println("Erro: " + e.getMessage());
     }
 }
-    }
     // MENU PACIENTE
     public static void menuPaciente(String login) {
 

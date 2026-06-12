@@ -1,3 +1,4 @@
+package src;
 public class Paciente {
 
     private String nome;
