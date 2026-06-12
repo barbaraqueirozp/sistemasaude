@@ -49,10 +49,8 @@ public class Main {
 
         System.out.print("Nome: ");
         String nome = sc.nextLine();
-        System.out.print("CRM: ");
+        System.out.print("ID do Conselho: ");
         String crm = sc.nextLine();
-        System.out.print("CPF: ");
-        String cpf = sc.nextLine();
 
         String login;
         while (true) {
@@ -66,7 +64,7 @@ public class Main {
         String senha = sc.nextLine();
 
         try (FileWriter fw = new FileWriter("profissionais.txt", true)) {
-            fw.write(nome + ";" + crm + ";" + cpf + ";" + login + ";" + senha + "\n");
+            fw.write(nome + ";" + crm + ";" + login + ";" + senha + "\n");
             System.out.println("Profissional cadastrado com sucesso!");
         } catch (Exception e) {
             System.out.println("Erro ao salvar profissional: " + e.getMessage());
@@ -255,8 +253,8 @@ public class Main {
 
         boolean achou = false;
 
-        try (BufferedReader br = new BufferedReader(new FileReader("medicacoes.txt"))) {
-            String linha;
+        try (BufferedReader br = new BufferedReader(new FileReader("medicacoes"))) {
+            String linha;  
             while ((linha = br.readLine()) != null) {
                 String[] m = linha.split(";");
                 if (m[0].equals(cpf)) {
