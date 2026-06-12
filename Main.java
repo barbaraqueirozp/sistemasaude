@@ -1,5 +1,8 @@
 import java.util.*;
 import java.io.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class Main {
 
@@ -45,75 +48,93 @@ public class Main {
     }
     // CADASTRO ENFERMEIRO/MEDICO
     public static void cadastrarProfissional() {
-        System.out.println("\n=== CADASTRO DE PROFISSIONAL ===");
 
-        System.out.print("Nome: ");
-        String nome = sc.nextLine();
-        System.out.print("ID do Conselho: ");
-        String crm = sc.nextLine();
+    System.out.println("\n=== CADASTRO DE PROFISSIONAL ===");
 
-        String login;
-        while (true) {
-            System.out.print("Login: ");
-            login = sc.nextLine();
-            if (!loginExiste(login)) break;
-            System.out.println("Esse login já existe! Digite outro.");
-        }
+    System.out.print("Nome: ");
+    String nome = sc.nextLine();
 
-        System.out.print("Senha: ");
-        String senha = sc.nextLine();
+    System.out.print("ID do Conselho: ");
+    String conselho = sc.nextLine();
 
-        try (FileWriter fw = new FileWriter("profissionais.txt", true)) {
-            fw.write(nome + ";" + crm + ";" + login + ";" + senha + "\n");
-            System.out.println("Profissional cadastrado com sucesso!");
-        } catch (Exception e) {
-            System.out.println("Erro ao salvar profissional: " + e.getMessage());
-        }
+    String login;
+
+    while (true) {
+
+        System.out.print("Login: ");
+        login = sc.nextLine();
+
+        if (!loginExiste(login))
+            break;
+
+        System.out.println("Login já existe.");
     }
+
+    System.out.print("Senha: ");
+    String senha = sc.nextLine();
+
+    String sql =
+        "INSERT INTO profissionais(nome,id_conselho,login,senha) VALUES (?,?,?,?)";
+
+    try (
+        Connection con = Conexao.conectar();
+        PreparedStatement ps = con.prepareStatement(sql)
+    ) {
+
+        ps.setString(1, nome);
+        ps.setString(2, conselho);
+        ps.setString(3, login);
+        ps.setString(4, senha);
+
+        ps.executeUpdate();
+
+        System.out.println("Profissional cadastrado!");
+
+    } catch (Exception e) {
+        System.out.println("Erro: " + e.getMessage());
+    }
+}
 
     // VERIFICAÇÃO (MENU TEM Q IDENTIFICAR SE É PCT OU PROFISSIONAL P/ MOSTRAR O MENU CORRETO)
     public static boolean verificarProfissional(String login, String senha) {
-        try (BufferedReader br = new BufferedReader(new FileReader("profissionais.txt"))) {
-            String linha;
-            while ((linha = br.readLine()) != null) {
-                String[] p = linha.split(";");
-                if (p.length >= 5 && p[3].equals(login) && p[4].equals(senha)) return true;
-            }
-        } catch (Exception e) {
+        String sql = "SELECT * FROM profissionais WHERE login = ? AND senha = ?";
+        try (Connection conn = Connection.connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, login);
+                stmt.setString(2, senha);
+                ResultSet rs = stmt.executeQuery();
+                return rs.next(); 
+        } catch (SQLException e) {
             System.out.println("Erro ao verificar profissional: " + e.getMessage());
         }
         return false;
     }
 
     public static boolean verificarPaciente(String login, String senha) {
-        try (BufferedReader br = new BufferedReader(new FileReader("pacientes.txt"))) {
-            String linha;
-            while ((linha = br.readLine()) != null) {
-                String[] p = linha.split(";");
-                if (p.length >= 4 && p[2].equals(login) && p[3].equals(senha)) return true;
-            }
-        } catch (Exception e) {
+        String sql = "SELECT * FROM pacientes WHERE login = ? AND senha = ?";
+        try (Connection conn = Connection.connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, login);
+                stmt.setString(2, senha);
+                ResultSet rs = stmt.executeQuery();
+                return rs.next(); 
+        } catch (SQLException e) {
             System.out.println("Erro ao verificar paciente: " + e.getMessage());
         }
         return false;
     }
 
     public static boolean loginExiste(String login) {
-        try (BufferedReader br = new BufferedReader(new FileReader("profissionais.txt"))) {
-            String linha;
-            while ((linha = br.readLine()) != null) {
-                String[] p = linha.split(";");
-                if (p.length >= 4 && p[3].equals(login)) return true;
-            }
-        } catch (Exception e) {}
-
-        try (BufferedReader br = new BufferedReader(new FileReader("pacientes.txt"))) {
-            String linha;
-            while ((linha = br.readLine()) != null) {
-                String[] p = linha.split(";");
-                if (p.length >= 3 && p[2].equals(login)) return true;
-            }
-        } catch (Exception e) {}
+        String sql = "SELECT * FROM profissionais WHERE login = ? UNION SELECT * FROM pacientes WHERE login = ?";
+        try (Connection conn = Connection.connect();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, login);
+                stmt.setString(2, login);
+                ResultSet rs = stmt.executeQuery();
+                return rs.next(); 
+        } catch (SQLException e) {
+            System.out.println("Erro ao verificar login: " + e.getMessage());
+        }
 
         return false;
     }
@@ -136,85 +157,155 @@ public class Main {
     }
     // CADASTRAR PACIENTE
     public static void cadastrarPaciente() {
-        System.out.println("\n=== CADASTRO DE PACIENTE ===");
 
-        System.out.print("Nome: ");
-        String nome = sc.nextLine();
-        System.out.print("CPF: ");
-        String cpf = sc.nextLine();
+    System.out.println("\n=== CADASTRO DE PACIENTE ===");
 
-        String login;
-        while (true) {
-            System.out.print("Login: ");
-            login = sc.nextLine();
-            if (!loginExiste(login)) break;
-            System.out.println("Esse login já existe! Digite outro.");
-        }
+    System.out.print("Nome: ");
+    String nome = sc.nextLine();
 
-        System.out.print("Senha: ");
-        String senha = sc.nextLine();
+    System.out.print("CPF: ");
+    String cpf = sc.nextLine();
 
-        try (FileWriter fw = new FileWriter("pacientes.txt", true)) {
-            fw.write(nome + ";" + cpf + ";" + login + ";" + senha + "\n");
-            System.out.println("Paciente cadastrado com sucesso!");
-        } catch (Exception e) {
-            System.out.println("Erro ao salvar paciente: " + e.getMessage());
-        }
+    String login;
+
+    while (true) {
+
+        System.out.print("Login: ");
+        login = sc.nextLine();
+
+        if (!loginExiste(login))
+            break;
+
+        System.out.println("Login já existe.");
+    }
+
+    System.out.print("Senha: ");
+    String senha = sc.nextLine();
+
+    String sql =
+        "INSERT INTO pacientes(nome,cpf,login,senha) VALUES (?,?,?,?)";
+
+    try (
+        Connection con = Conexao.conectar();
+        PreparedStatement ps = con.prepareStatement(sql)
+    ) {
+
+        ps.setString(1, nome);
+        ps.setString(2, cpf);
+        ps.setString(3, login);
+        ps.setString(4, senha);
+
+        ps.executeUpdate();
+
+        System.out.println("Paciente cadastrado!");
+
+    } catch (Exception e) {
+        System.out.println("Erro: " + e.getMessage());
+    }
+}
     }
     // LISTAR PACIENTES
-    public static void listarPacientesParaEscolha() {
-        ArrayList<String> pacientes = new ArrayList<>();
+  public static void listarPacientesParaEscolha() {
 
-        try (BufferedReader br = new BufferedReader(new FileReader("pacientes.txt"))) {
-            String linha;
-            while ((linha = br.readLine()) != null) pacientes.add(linha);
-        } catch (Exception e) {
-            System.out.println("Erro ao ler pacientes.txt: " + e.getMessage());
+    ArrayList<Paciente> pacientes = new ArrayList<>();
+
+    String sql =
+            "SELECT nome, cpf FROM pacientes ORDER BY nome";
+
+    try (
+            Connection con = Conexao.conectar();
+            PreparedStatement ps = con.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()
+    ) {
+
+        while (rs.next()) {
+
+            pacientes.add(
+                    new Paciente(
+                            rs.getString("nome"),
+                            rs.getString("cpf")
+                    )
+            );
         }
 
-        if (pacientes.size() == 0) {
-            System.out.println("Nenhum paciente cadastrado.");
-            return;
-        }
+    } catch (Exception e) {
+        System.out.println("Erro ao buscar pacientes: "
+                + e.getMessage());
+        return;
+    }
 
-        System.out.println("\n=== LISTA DE PACIENTES ===");
-        for (int i = 0; i < pacientes.size(); i++) {
-            String nome = pacientes.get(i).split(";")[0];
-            System.out.println((i+1) + " - " + nome);
-        }
+    if (pacientes.isEmpty()) {
+        System.out.println("Nenhum paciente cadastrado.");
+        return;
+    }
 
-        System.out.print("Escolha um paciente (0 para voltar): ");
-        int op = sc.nextInt();
-        sc.nextLine();
+    System.out.println("\n=== LISTA DE PACIENTES ===");
 
-        if (op == 0) return;
-        if (op < 1 || op > pacientes.size()) {
-            System.out.println("Opção inválida!");
-            return;
-        }
+    for (int i = 0; i < pacientes.size(); i++) {
 
-        String paciente = pacientes.get(op - 1);
-        String cpf = paciente.split(";")[1];
+        System.out.println(
+                (i + 1) + " - " +
+                        pacientes.get(i).getNome()
+        );
+    }
 
-        cadastrarMedicacao(cpf);
+    System.out.print(
+            "Escolha um paciente (0 para voltar): ");
+
+    int op = sc.nextInt();
+    sc.nextLine();
+
+    if (op == 0)
+        return;
+
+    if (op < 1 || op > pacientes.size()) {
+
+        System.out.println("Opção inválida!");
+        return;
+    }
+
+    String cpfPaciente =
+            pacientes.get(op - 1).getCpf();
+
+    cadastrarMedicacao(cpfPaciente);
+
     }
     // CADASTRO DE MEDICAÇÃO
     public static void cadastrarMedicacao(String cpfPaciente) {
-        System.out.println("\n=== CADASTRO DE MEDICAÇÃO ===");
 
-        System.out.print("Nome da medicação: ");
-        String nome = sc.nextLine();
-        System.out.print("Posologia (mg): ");
-        String posologia = sc.nextLine();
-        System.out.print("Vezes ao dia: ");
-        String vezes = sc.nextLine();
+    System.out.println("\n=== CADASTRO DE MEDICAÇÃO ===");
 
-        try (FileWriter fw = new FileWriter("medicacoes.txt", true)) {
-            fw.write(cpfPaciente + ";" + nome + ";" + posologia + ";" + vezes + "\n");
-            System.out.println("Medicação cadastrada com sucesso!");
-        } catch (Exception e) {
-            System.out.println("Erro ao salvar medicação: " + e.getMessage());
-        }
+    System.out.print("Nome da medicação: ");
+    String nome = sc.nextLine();
+
+    System.out.print("Posologia (mg): ");
+    String posologia = sc.nextLine();
+
+    System.out.print("Vezes ao dia: ");
+    int vezes = sc.nextInt();
+    sc.nextLine();
+
+    String sql =
+        "INSERT INTO medicacoes(paciente_cpf,nome_medicacao,posologia,vezes_ao_dia) VALUES (?,?,?,?)";
+
+    try (
+        Connection con = Conexao.conectar();
+        PreparedStatement ps = con.prepareStatement(sql)
+    ) {
+
+        ps.setString(1, cpfPaciente);
+        ps.setString(2, nome);
+        ps.setString(3, posologia);
+        ps.setInt(4, vezes);
+
+        ps.executeUpdate();
+
+        System.out.println("Medicação cadastrada!");
+
+    } catch (Exception e) {
+        System.out.println("Erro: " + e.getMessage());
+    }
+}
     }
     // MENU PACIENTE
     public static void menuPaciente(String login) {
@@ -236,39 +327,69 @@ public class Main {
     }
 
     public static String pegarCpfPaciente(String login) {
-        try (BufferedReader br = new BufferedReader(new FileReader("pacientes.txt"))) {
-            String linha;
-            while ((linha = br.readLine()) != null) {
-                String[] v = linha.split(";");
-                if (v[2].equals(login)) return v[1];
-            }
-        } catch (Exception e) {
-            System.out.println("Erro ao buscar CPF do paciente: " + e.getMessage());
-        }
-        return "";
+
+    String sql =
+        "SELECT cpf FROM pacientes WHERE login = ?";
+
+    try (
+        Connection con = Conexao.conectar();
+        PreparedStatement ps = con.prepareStatement(sql)
+    ) {
+
+        ps.setString(1, login);
+
+        ResultSet rs = ps.executeQuery();
+
+        if (rs.next())
+            return rs.getString("cpf");
+
+    } catch (Exception e) {
+        System.out.println("Erro: " + e.getMessage());
     }
+
+    return "";
+}
     // MOSTRAR MEDICAÇÕES DO PACIENTE
     public static void mostrarMedicacoes(String cpf) {
-        System.out.println("\n=== MEDICAÇÕES ===");
 
-        boolean achou = false;
+    String sql =
+        "SELECT * FROM medicacoes WHERE paciente_cpf = ?";
 
-        try (BufferedReader br = new BufferedReader(new FileReader("medicacoes"))) {
-            String linha;  
-            while ((linha = br.readLine()) != null) {
-                String[] m = linha.split(";");
-                if (m[0].equals(cpf)) {
-                    System.out.println("Medicamento: " + m[1]);
-                    System.out.println("Posologia: " + m[2] + " mg");
-                    System.out.println("Vezes ao dia: " + m[3]);
-                    System.out.println("-------------------------");
-                    achou = true;
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("Erro ao ler medicações: " + e.getMessage());
+    boolean achou = false;
+
+    try (
+        Connection con = Conexao.conectar();
+        PreparedStatement ps = con.prepareStatement(sql)
+    ) {
+
+        ps.setString(1, cpf);
+
+        ResultSet rs = ps.executeQuery();
+
+        while (rs.next()) {
+
+            System.out.println(
+                "Medicamento: " +
+                rs.getString("nome_medicacao"));
+
+            System.out.println(
+                "Posologia: " +
+                rs.getString("posologia"));
+
+            System.out.println(
+                "Vezes ao dia: " +
+                rs.getInt("vezes_ao_dia"));
+
+            System.out.println("--------------------");
+
+            achou = true;
         }
 
-        if (!achou) System.out.println("Nenhuma medicação cadastrada.");
+    } catch (Exception e) {
+        System.out.println("Erro: " + e.getMessage());
     }
+
+    if (!achou)
+        System.out.println("Nenhuma medicação cadastrada.");
+}
 }
