@@ -1,10 +1,6 @@
 CREATE DATABASE IF NOT EXISTS sistema_saude;
 USE sistema_saude;
 
--- ATENCAO:
--- Este script recria as tabelas para alinhar o banco ao codigo Java atual.
--- Se voce ja tiver dados importantes no MySQL, faca backup antes de executar.
-
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS prescricoes;
@@ -37,8 +33,6 @@ CREATE TABLE pacientes (
   UNIQUE KEY uk_pacientes_login (login)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Catalogo geral de medicacoes.
--- Nao fica mais vinculado diretamente ao CPF do paciente.
 CREATE TABLE medicacoes (
   id INT NOT NULL AUTO_INCREMENT,
   nome VARCHAR(100) NOT NULL,
@@ -46,7 +40,6 @@ CREATE TABLE medicacoes (
   UNIQUE KEY uk_medicacoes_nome (nome)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Opcoes de posologia disponiveis para cada medicacao.
 CREATE TABLE posologias (
   id INT NOT NULL AUTO_INCREMENT,
   medicacao_id INT NOT NULL,
@@ -59,8 +52,6 @@ CREATE TABLE posologias (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Prontuario/prescricoes do paciente.
--- O paciente e identificado pelo CPF.
 CREATE TABLE prescricoes (
   id_prescricao INT NOT NULL AUTO_INCREMENT,
   paciente_cpf VARCHAR(14) NOT NULL,
@@ -82,21 +73,3 @@ CREATE TABLE prescricoes (
     FOREIGN KEY (posologia_id) REFERENCES posologias (id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Dados iniciais para testar o submenu "Fazer prescricao".
-INSERT INTO medicacoes (nome) VALUES
-  ('Dipirona'),
-  ('Paracetamol'),
-  ('Amoxicilina');
-
-INSERT INTO posologias (medicacao_id, descricao)
-SELECT id, '500 mg' FROM medicacoes WHERE nome = 'Dipirona';
-
-INSERT INTO posologias (medicacao_id, descricao)
-SELECT id, '1 g' FROM medicacoes WHERE nome = 'Dipirona';
-
-INSERT INTO posologias (medicacao_id, descricao)
-SELECT id, '750 mg' FROM medicacoes WHERE nome = 'Paracetamol';
-
-INSERT INTO posologias (medicacao_id, descricao)
-SELECT id, '500 mg' FROM medicacoes WHERE nome = 'Amoxicilina';

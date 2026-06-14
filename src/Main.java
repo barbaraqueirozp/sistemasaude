@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 public class Main {
 
     static Scanner sc = new Scanner(System.in);
@@ -181,22 +182,99 @@ public class Main {
     }
     // Cadastro geral de medicações
     public static void cadastrarMedicacao() {
-        System.out.println("\n=== CADASTRO DE MEDICAÇÃO ===");
-        System.out.print("Digite a medicação a ser cadastrada: ");
+        System.out.println("\n=== CADASTRO DE MEDICACAO ===");
+        System.out.print("Digite a medicacao a ser cadastrada: ");
         String nome = sc.nextLine();
 
+        Integer idExistente = buscarIdMedicacaoPorNome(nome);
+
+        if (idExistente != null) {
+            System.out.println("Medicacao ja cadastrada.");
+            cadastrarPosologiasDaMedicacao(idExistente, nome);
+            return;
+        }
+
         String sql = "INSERT INTO medicacoes(nome) VALUES (?)";
+        int idMedicacao;
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            ps.setString(1, nome);
+            ps.executeUpdate();
+
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (!rs.next()) {
+                    System.out.println("Medicacao cadastrada, mas nao foi possivel recuperar o codigo.");
+                    return;
+                }
+
+                idMedicacao = rs.getInt(1);
+            }
+
+            System.out.println("Medicacao cadastrada!");
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+            return;
+        }
+
+        cadastrarPosologiasDaMedicacao(idMedicacao, nome);
+    }
+
+    public static Integer buscarIdMedicacaoPorNome(String nome) {
+        String sql = "SELECT id FROM medicacoes WHERE nome = ?";
 
         try (Connection con = Conexao.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, nome);
-            ps.executeUpdate();
 
-            System.out.println("Medicação cadastrada!");
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id");
+                }
+            }
 
         } catch (Exception e) {
-            System.out.println("Erro: " + e.getMessage());
+            System.out.println("Erro ao buscar medicacao: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    public static void cadastrarPosologiasDaMedicacao(int idMedicacao, String nomeMedicacao) {
+        System.out.println("\n=== POSOLOGIAS DE " + nomeMedicacao + " ===");
+        System.out.println("Cadastre as opcoes de posologia. Exemplo: 500 mg, 750 mg, 1 g.");
+
+        while (true) {
+            System.out.print("Digite uma posologia (ENTER para finalizar): ");
+            String descricao = sc.nextLine();
+
+            if (descricao.trim().isEmpty()) {
+                break;
+            }
+
+            inserirPosologia(idMedicacao, descricao);
+        }
+
+        System.out.println("As vezes ao dia serao informadas ao fazer a prescricao para o paciente.");
+    }
+
+    public static void inserirPosologia(int idMedicacao, String descricao) {
+        String sql = "INSERT INTO posologias(medicacao_id, descricao) VALUES (?, ?)";
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, idMedicacao);
+            ps.setString(2, descricao);
+            ps.executeUpdate();
+
+            System.out.println("Posologia cadastrada!");
+
+        } catch (Exception e) {
+            System.out.println("Erro ao cadastrar posologia: " + e.getMessage());
         }
     }
     // BUSCAR PACIENTE POR CPF
