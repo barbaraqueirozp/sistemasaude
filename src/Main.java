@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 public class Main {
 
     static Scanner sc = new Scanner(System.in);
@@ -141,11 +140,10 @@ public class Main {
     }
 
     public static boolean loginExiste(String login) {
-        String sql = "SELECT * FROM profissionais WHERE login = ? UNION SELECT * FROM pacientes WHERE login = ?";
+        String sql = "SELECT * FROM profissionais WHERE login = ?";
         try (Connection conn = Conexao.conectar();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, login);
-                stmt.setString(2, login);
                 ResultSet rs = stmt.executeQuery();
                 return rs.next(); 
         } catch (Exception e) {
@@ -162,17 +160,371 @@ public class Main {
     public static void menuProfissional(String login) {
         while (true) {
             System.out.println("\n=== MENU PROFISSIONAL ===");
-            System.out.println("1 - Listar pacientes e cadastrar medicação");
+            System.out.println("1 - Listar pacientes");
             System.out.println("2 - Cadastrar novo paciente");
-            System.out.println("3 - Sair");
+            System.out.println("3 - Buscar paciente por CPF");
+            System.out.println("4 - Buscar paciente por nome");
+            System.out.println("5 - Cadastro de medicação");
+            System.out.println("6 - Sair");
             System.out.print("Escolha: ");
             int op = sc.nextInt();
             sc.nextLine();
 
             if (op == 1) listarPacientesParaEscolha();
             else if (op == 2) cadastrarPaciente();
-            else if (op == 3) return;
+            else if (op == 3) buscarPacientePorCPF();
+            else if (op == 4) buscarPacientePorNome();
+            else if (op == 5) cadastrarMedicacao();
+            else if (op == 6) return;
             else System.out.println("Opção inválida!");
+        }
+    }
+    // Cadastro geral de medicações
+    public static void cadastrarMedicacao() {
+        System.out.println("\n=== CADASTRO DE MEDICAÇÃO ===");
+        System.out.print("Digite a medicação a ser cadastrada: ");
+        String nome = sc.nextLine();
+
+        String sql = "INSERT INTO medicacoes(nome) VALUES (?)";
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, nome);
+            ps.executeUpdate();
+
+            System.out.println("Medicação cadastrada!");
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+    // BUSCAR PACIENTE POR CPF
+    public static void buscarPacientePorCPF() {
+        System.out.print("Digite o CPF do paciente: ");
+        String cpf = sc.nextLine();
+
+        String sql = "SELECT * FROM pacientes WHERE cpf = ?";
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, cpf);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                System.out.println("Nome: " + rs.getString("nome"));
+                System.out.println("CPF: " + rs.getString("cpf"));
+                menuPacienteProfissional(cpf);
+            } else {
+                System.out.println("Paciente não encontrado.");
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+    // BUSCAR PACIENTE POR NOME
+    public static void buscarPacientePorNome() {
+        System.out.print("Digite o nome do paciente: ");
+        String nome = sc.nextLine();
+
+        String sql = "SELECT * FROM pacientes WHERE nome LIKE ?";
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, "%" + nome + "%");
+            ResultSet rs = ps.executeQuery();
+
+            boolean achou = false;
+
+            while (rs.next()) {
+                System.out.println("Nome: " + rs.getString("nome"));
+                System.out.println("CPF: " + rs.getString("cpf"));
+                menuPacienteProfissional(rs.getString("cpf"));
+                System.out.println("--------------------");
+                achou = true;
+            }
+
+            if (!achou) {
+                System.out.println("Nenhum paciente encontrado.");
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+    // MENU PROFISISONAL DO PACIENTE
+    public static void menuPacienteProfissional(String cpf) {
+
+    while (true) {
+
+        System.out.println("\n=== MENU DO PACIENTE ===");
+        System.out.println("1 - Ver prescrições do paciente");
+        System.out.println("2 - Fazer prescrição");
+        System.out.println("3 - Excluir prescrição");
+        System.out.println("4 - Voltar");
+        System.out.print("Escolha: ");
+
+        int op = sc.nextInt();
+        sc.nextLine();
+
+        switch (op) {
+
+            case 1:
+                mostrarMedicacoes(cpf);
+                    while (true) {
+                        System.out.println("1 - Alterar prescrição");
+                        System.out.println("2 - Voltar");
+                        System.out.print("Escolha: ");
+                        int subOp = sc.nextInt();
+                        sc.nextLine();
+
+                        if (subOp == 1) {
+                            alterarMedicacao(cpf);
+                            break;
+                        } else if (subOp == 2) {
+                            break;
+                        } else {
+                            System.out.println("Opção inválida!");
+                        }
+                    }
+                break;
+
+            case 2:
+                cadastrarPrescricao(cpf);
+                break;
+
+            case 3:
+                excluirMedicacao(cpf);
+                break;
+
+            case 4:
+                return;
+
+            default:
+                System.out.println("Opção inválida!");
+        }
+    }
+}
+    // CADASTRO DE PRESCRIÇÃO
+    public static void cadastrarPrescricao(String cpf) {
+        System.out.println("\n=== CADASTRO DE PRESCRICAO ===");
+        List<Medicacao> medicacoes = buscarMedicacoesCadastradas();
+
+        if (medicacoes.isEmpty()) {
+            System.out.println("Nenhuma medicacao cadastrada no banco.");
+            return;
+        }
+
+        System.out.println("\nMedicacoes disponiveis:");
+        for (int i = 0; i < medicacoes.size(); i++) {
+            System.out.println((i + 1) + " - " + medicacoes.get(i).getNome());
+        }
+
+        System.out.print("Escolha a medicacao (0 para voltar): ");
+        int opMedicacao = sc.nextInt();
+        sc.nextLine();
+
+        if (opMedicacao == 0) return;
+
+        if (opMedicacao < 1 || opMedicacao > medicacoes.size()) {
+            System.out.println("Opcao invalida!");
+            return;
+        }
+
+        Medicacao medicacao = medicacoes.get(opMedicacao - 1);
+        List<Posologia> posologias = buscarPosologias(medicacao.getId());
+
+        if (posologias.isEmpty()) {
+            System.out.println("Nenhuma posologia cadastrada para essa medicacao.");
+            return;
+        }
+
+        System.out.println("\nPosologias disponiveis para " + medicacao.getNome() + ":");
+        for (int i = 0; i < posologias.size(); i++) {
+            System.out.println((i + 1) + " - " + posologias.get(i).getDescricao());
+        }
+
+        System.out.print("Escolha a posologia (0 para voltar): ");
+        int opPosologia = sc.nextInt();
+        sc.nextLine();
+
+        if (opPosologia == 0) return;
+
+        if (opPosologia < 1 || opPosologia > posologias.size()) {
+            System.out.println("Opcao invalida!");
+            return;
+        }
+
+        System.out.print("Vezes ao dia: ");
+        int vezesAoDia = sc.nextInt();
+        sc.nextLine();
+
+        Posologia posologia = posologias.get(opPosologia - 1);
+        registrarPrescricao(cpf, medicacao.getId(), posologia.getId(), vezesAoDia);
+    }
+
+    public static List<Medicacao> buscarMedicacoesCadastradas() {
+        List<Medicacao> medicacoes = new ArrayList<>();
+        String sql = "SELECT id, nome FROM medicacoes ORDER BY nome";
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                medicacoes.add(new Medicacao(rs.getInt("id"), rs.getString("nome")));
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro ao buscar medicacoes: " + e.getMessage());
+        }
+
+        return medicacoes;
+    }
+
+    public static List<Posologia> buscarPosologias(int idMedicacao) {
+        List<Posologia> posologias = new ArrayList<>();
+        String sql = "SELECT id, descricao FROM posologias WHERE medicacao_id = ? ORDER BY descricao";
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, idMedicacao);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    posologias.add(new Posologia(rs.getInt("id"), rs.getString("descricao")));
+                }
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro ao buscar posologias: " + e.getMessage());
+        }
+
+        return posologias;
+    }
+
+    public static void registrarPrescricao(String cpf, int idMedicacao, int idPosologia, int vezesAoDia) {
+        String sql = "INSERT INTO prescricoes(paciente_cpf, medicacao_id, posologia_id, vezes_ao_dia) VALUES (?,?,?,?)";
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, cpf);
+            ps.setInt(2, idMedicacao);
+            ps.setInt(3, idPosologia);
+            ps.setInt(4, vezesAoDia);
+
+            ps.executeUpdate();
+
+            System.out.println("Prescricao cadastrada!");
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+    //ALTERAR MEDICACAO
+    public static void alterarMedicacao(String cpf) {
+        System.out.print("Digite o codigo da prescricao a alterar: ");
+        int idPrescricao = sc.nextInt();
+        sc.nextLine();
+
+        Integer idMedicacao = buscarIdMedicacaoDaPrescricao(cpf, idPrescricao);
+
+        if (idMedicacao == null) {
+            System.out.println("Prescricao nao encontrada para esse paciente.");
+            return;
+        }
+
+        List<Posologia> posologias = buscarPosologias(idMedicacao);
+
+        if (posologias.isEmpty()) {
+            System.out.println("Nenhuma posologia cadastrada para essa medicacao.");
+            return;
+        }
+
+        System.out.println("\nNovas posologias disponiveis:");
+        for (int i = 0; i < posologias.size(); i++) {
+            System.out.println((i + 1) + " - " + posologias.get(i).getDescricao());
+        }
+
+        System.out.print("Escolha a nova posologia: ");
+        int opPosologia = sc.nextInt();
+        sc.nextLine();
+
+        if (opPosologia < 1 || opPosologia > posologias.size()) {
+            System.out.println("Opcao invalida!");
+            return;
+        }
+
+        System.out.print("Novas vezes ao dia: ");
+        int vezes = sc.nextInt();
+        sc.nextLine();
+
+        String sql = "UPDATE prescricoes SET posologia_id = ?, vezes_ao_dia = ? WHERE paciente_cpf = ? AND id_prescricao = ?";
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, posologias.get(opPosologia - 1).getId());
+            ps.setInt(2, vezes);
+            ps.setString(3, cpf);
+            ps.setInt(4, idPrescricao);
+
+            int affected = ps.executeUpdate();
+
+            if (affected > 0) System.out.println("Prescricao alterada!");
+            else System.out.println("Prescricao nao encontrada para esse paciente.");
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+
+    public static Integer buscarIdMedicacaoDaPrescricao(String cpf, int idPrescricao) {
+        String sql = "SELECT medicacao_id FROM prescricoes WHERE paciente_cpf = ? AND id_prescricao = ?";
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, cpf);
+            ps.setInt(2, idPrescricao);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("medicacao_id");
+                }
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    private static void excluirMedicacao(String cpf) {
+        System.out.print("Digite o codigo da prescricao a excluir: ");
+        int idPrescricao = sc.nextInt();
+        sc.nextLine();
+        String sql = "DELETE FROM prescricoes WHERE paciente_cpf = ? AND id_prescricao = ?";
+
+        try (Connection con = Conexao.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, cpf);
+            ps.setInt(2, idPrescricao);
+
+            int affected = ps.executeUpdate();
+
+            if (affected > 0) System.out.println("Prescricao excluida!");
+            else System.out.println("Prescricao nao encontrada para esse paciente.");
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
         }
     }
     // CADASTRAR PACIENTE
@@ -286,45 +638,8 @@ public class Main {
     String cpfPaciente =
             pacientes.get(op - 1).getCpf();
 
-    cadastrarMedicacao(cpfPaciente);
-
+    menuPacienteProfissional(cpfPaciente);
     }
-    // CADASTRO DE MEDICAÇÃO
-    public static void cadastrarMedicacao(String cpfPaciente) {
-
-    System.out.println("\n=== CADASTRO DE MEDICAÇÃO ===");
-
-    System.out.print("Nome da medicação: ");
-    String nome = sc.nextLine();
-
-    System.out.print("Posologia (mg): ");
-    String posologia = sc.nextLine();
-
-    System.out.print("Vezes ao dia: ");
-    int vezes = sc.nextInt();
-    sc.nextLine();
-
-    String sql =
-        "INSERT INTO medicacoes(paciente_cpf,nome_medicacao,posologia,vezes_ao_dia) VALUES (?,?,?,?)";
-
-    try (
-        Connection con = Conexao.conectar();
-        PreparedStatement ps = con.prepareStatement(sql)
-    ) {
-
-        ps.setString(1, cpfPaciente);
-        ps.setString(2, nome);
-        ps.setString(3, posologia);
-        ps.setInt(4, vezes);
-
-        ps.executeUpdate();
-
-        System.out.println("Medicação cadastrada!");
-
-    } catch (Exception e) {
-        System.out.println("Erro: " + e.getMessage());
-    }
-}
     // MENU PACIENTE
     public static void menuPaciente(String login) {
 
@@ -368,46 +683,57 @@ public class Main {
     return "";
 }
     // MOSTRAR MEDICAÇÕES DO PACIENTE
-    public static void mostrarMedicacoes(String cpf) {
-
+   public static List<Medicacao> buscarMedicacoes(String cpf) {
     String sql =
-        "SELECT * FROM medicacoes WHERE paciente_cpf = ?";
+        "SELECT p.id_prescricao, m.nome, po.descricao, p.vezes_ao_dia " +
+        "FROM prescricoes p " +
+        "INNER JOIN medicacoes m ON m.id = p.medicacao_id " +
+        "INNER JOIN posologias po ON po.id = p.posologia_id " +
+        "WHERE p.paciente_cpf = ? " +
+        "ORDER BY p.data_prescricao DESC";
+    List<Medicacao> lista = new ArrayList<>();
 
-    boolean achou = false;
-
-    try (
-        Connection con = Conexao.conectar();
-        PreparedStatement ps = con.prepareStatement(sql)
-    ) {
-
+    try (Connection con = Conexao.conectar(); 
+         PreparedStatement ps = con.prepareStatement(sql)) {
+        
         ps.setString(1, cpf);
-
-        ResultSet rs = ps.executeQuery();
-
-        while (rs.next()) {
-
-            System.out.println(
-                "Medicamento: " +
-                rs.getString("nome_medicacao"));
-
-            System.out.println(
-                "Posologia: " +
-                rs.getString("posologia"));
-
-            System.out.println(
-                "Vezes ao dia: " +
-                rs.getInt("vezes_ao_dia"));
-
-            System.out.println("--------------------");
-
-            achou = true;
+        
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                // Criando o objeto com os dados do banco
+                Medicacao med = new Medicacao(
+                    rs.getInt("id_prescricao"),
+                    rs.getString("nome"),
+                    rs.getString("descricao"),
+                    rs.getInt("vezes_ao_dia")
+                );
+                // Adicionando o objeto na lista
+                lista.add(med);
+            }
         }
-
     } catch (Exception e) {
-        System.out.println("Erro: " + e.getMessage());
+        System.out.println("Erro ao buscar medicações: " + e.getMessage());
     }
 
-    if (!achou)
-        System.out.println("Nenhuma medicação cadastrada.");
+    // Retorna a lista (vazia se não encontrar nada ou cheia se encontrar)
+    return lista;
 }
+
+    public static void mostrarMedicacoes(String cpf) {
+        List<Medicacao> medicacoes = buscarMedicacoes(cpf);
+
+        if (medicacoes.isEmpty()) {
+            System.out.println("Nenhuma medicação cadastrada para este paciente.");
+            return;
+        }
+
+        System.out.println("\n=== MEDICAÇÕES DO PACIENTE ===");
+        for (Medicacao med : medicacoes) {
+            System.out.println("Codigo da prescricao: " + med.getId());
+            System.out.println("Nome: " + med.getNome());
+            System.out.println("Posologia: " + med.getPosologia());
+            System.out.println("Vezes ao dia: " + med.getVezesAoDia());
+            System.out.println("--------------------");
+        }
+    }
 }

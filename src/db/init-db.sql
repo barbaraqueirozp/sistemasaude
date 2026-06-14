@@ -1,34 +1,102 @@
--- sistema_saude.medicacoes definição
+CREATE DATABASE IF NOT EXISTS sistema_saude;
+USE sistema_saude;
 
-CREATE TABLE `medicacoes` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `paciente_cpf` varchar(14) NOT NULL,
-  `nome_medicacao` varchar(100) NOT NULL,
-  `posologia` varchar(50) NOT NULL,
-  `vezes_ao_dia` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_medicacao_paciente` (`paciente_cpf`),
-  CONSTRAINT `fk_medicacao_paciente` FOREIGN KEY (`paciente_cpf`) REFERENCES `pacientes` (`cpf`) ON DELETE CASCADE
+-- ATENCAO:
+-- Este script recria as tabelas para alinhar o banco ao codigo Java atual.
+-- Se voce ja tiver dados importantes no MySQL, faca backup antes de executar.
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS prescricoes;
+DROP TABLE IF EXISTS posologias;
+DROP TABLE IF EXISTS medicacoes;
+DROP TABLE IF EXISTS pacientes;
+DROP TABLE IF EXISTS profissionais;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE profissionais (
+  id_profissional INT NOT NULL AUTO_INCREMENT,
+  nome VARCHAR(100) NOT NULL,
+  id_conselho VARCHAR(14) NOT NULL,
+  login VARCHAR(50) NOT NULL,
+  senha VARCHAR(255) NOT NULL,
+  PRIMARY KEY (id_profissional),
+  UNIQUE KEY uk_profissionais_conselho (id_conselho),
+  UNIQUE KEY uk_profissionais_login (login)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- sistema_saude.pacientes definição
-
-CREATE TABLE `pacientes` (
-  `id_paciente` int(11) NOT NULL AUTO_INCREMENT,
-  `nome` varchar(100) NOT NULL,
-  `cpf` varchar(14) NOT NULL,
-  `login` varchar(50) NOT NULL,
-  `senha` varchar(255) NOT NULL,
-  PRIMARY KEY (`id_paciente`),
-  UNIQUE KEY `cpf` (`cpf`),
-  UNIQUE KEY `login` (`login`)
+CREATE TABLE pacientes (
+  id_paciente INT NOT NULL AUTO_INCREMENT,
+  nome VARCHAR(100) NOT NULL,
+  cpf VARCHAR(14) NOT NULL,
+  login VARCHAR(50) NOT NULL,
+  senha VARCHAR(255) NOT NULL,
+  PRIMARY KEY (id_paciente),
+  UNIQUE KEY uk_pacientes_cpf (cpf),
+  UNIQUE KEY uk_pacientes_login (login)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
--- sistema_saude.profissionais definição
 
-CREATE TABLE `profissionais` (
-  `id_proficionais` int(11) NOT NULL AUTO_INCREMENT,
-  `id_conselho` varchar(14) NOT NULL,
-  `senha` varchar(100) NOT NULL,
-  PRIMARY KEY (`id_proficionais`),
-  UNIQUE KEY `senha` (`senha`)
+-- Catalogo geral de medicacoes.
+-- Nao fica mais vinculado diretamente ao CPF do paciente.
+CREATE TABLE medicacoes (
+  id INT NOT NULL AUTO_INCREMENT,
+  nome VARCHAR(100) NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_medicacoes_nome (nome)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Opcoes de posologia disponiveis para cada medicacao.
+CREATE TABLE posologias (
+  id INT NOT NULL AUTO_INCREMENT,
+  medicacao_id INT NOT NULL,
+  descricao VARCHAR(100) NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_posologias_medicacao_descricao (medicacao_id, descricao),
+  KEY idx_posologias_medicacao_id (medicacao_id),
+  CONSTRAINT fk_posologias_medicacao
+    FOREIGN KEY (medicacao_id) REFERENCES medicacoes (id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Prontuario/prescricoes do paciente.
+-- O paciente e identificado pelo CPF.
+CREATE TABLE prescricoes (
+  id_prescricao INT NOT NULL AUTO_INCREMENT,
+  paciente_cpf VARCHAR(14) NOT NULL,
+  medicacao_id INT NOT NULL,
+  posologia_id INT NOT NULL,
+  vezes_ao_dia INT NOT NULL,
+  data_prescricao DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_prescricao),
+  KEY idx_prescricoes_paciente_cpf (paciente_cpf),
+  KEY idx_prescricoes_medicacao_id (medicacao_id),
+  KEY idx_prescricoes_posologia_id (posologia_id),
+  CONSTRAINT fk_prescricoes_paciente
+    FOREIGN KEY (paciente_cpf) REFERENCES pacientes (cpf)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_prescricoes_medicacao
+    FOREIGN KEY (medicacao_id) REFERENCES medicacoes (id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_prescricoes_posologia
+    FOREIGN KEY (posologia_id) REFERENCES posologias (id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Dados iniciais para testar o submenu "Fazer prescricao".
+INSERT INTO medicacoes (nome) VALUES
+  ('Dipirona'),
+  ('Paracetamol'),
+  ('Amoxicilina');
+
+INSERT INTO posologias (medicacao_id, descricao)
+SELECT id, '500 mg' FROM medicacoes WHERE nome = 'Dipirona';
+
+INSERT INTO posologias (medicacao_id, descricao)
+SELECT id, '1 g' FROM medicacoes WHERE nome = 'Dipirona';
+
+INSERT INTO posologias (medicacao_id, descricao)
+SELECT id, '750 mg' FROM medicacoes WHERE nome = 'Paracetamol';
+
+INSERT INTO posologias (medicacao_id, descricao)
+SELECT id, '500 mg' FROM medicacoes WHERE nome = 'Amoxicilina';
