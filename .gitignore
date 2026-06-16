@@ -1,0 +1,8 @@
+*.class
+bin/
+
+lib/
+
+.DS_Store
+
+.env
