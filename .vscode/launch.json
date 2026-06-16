@@ -9,13 +9,6 @@
             "name": "Main",
             "request": "launch",
             "mainClass": "src.Main",
-            "projectName": "sistemasaude_ed7a5808"
-        },
-        {
-            "type": "java",
-            "name": "Main",
-            "request": "launch",
-            "mainClass": "src.Main",
             "projectName": "sistemasaude_e52a276a"
         },
         {

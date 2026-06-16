@@ -7,9 +7,9 @@ public class Conexao {
     public static Connection conectar() throws Exception {
 
         return DriverManager.getConnection(
-            "jdbc:mysql://localhost:3307/sistema_saude",
+            "jdbc:mysql://localhost:3306/sistema_saude",
             "root",
-            "root"
+            ""
         );
     }
 }
