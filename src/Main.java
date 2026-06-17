@@ -1,25 +1,28 @@
 package src;
-import java.util.*;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
 public class Main {
 
     static Scanner sc = new Scanner(System.in);
 
     public static void main(String[] args) {
 
-    try (
-        Connection con = Conexao.conectar();
-    ) {
-        System.out.println("Conexão bem-sucedida!");
+        try (
+                Connection con = Conexao.conectar();) {
+            System.out.println("Conexão bem-sucedida!");
 
-    } catch (Exception e) {
-        System.out.println("Erro: " + e.getMessage());
-        throw new RuntimeException(e);
-    }
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
 
         while (true) {
             System.out.println("\n=== SISTEMA SAÚDE ===");
@@ -30,14 +33,18 @@ public class Main {
             int op = sc.nextInt();
             sc.nextLine();
 
-            if (op == 1) fazerLogin();
-            else if (op == 2) cadastrarProfissional();
+            if (op == 1)
+                fazerLogin();
+            else if (op == 2)
+                cadastrarProfissional();
             else if (op == 3) {
                 System.out.println("Saindo...");
                 return;
-            } else System.out.println("Opção inválida!");
+            } else
+                System.out.println("Opção inválida!");
         }
     }
+
     // LOGIN
     public static void fazerLogin() {
         System.out.print("Login: ");
@@ -57,96 +64,99 @@ public class Main {
 
         System.out.println("Login ou senha incorretos!");
     }
+
     // CADASTRO ENFERMEIRO/MEDICO
     public static void cadastrarProfissional() {
 
-    System.out.println("\n=== CADASTRO DE PROFISSIONAL ===");
+        System.out.println("\n=== CADASTRO DE PROFISSIONAL ===");
 
-    System.out.print("Nome: ");
-    String nome = sc.nextLine();
+        System.out.print("Nome: ");
+        String nome = sc.nextLine();
 
-    System.out.print("ID do Conselho: ");
-    String conselho = sc.nextLine();
+        System.out.print("ID do Conselho: ");
+        String conselho = sc.nextLine();
 
-    String login;
+        String login;
 
-    while (true) {
+        while (true) {
 
-        System.out.print("Login: ");
-        login = sc.nextLine();
+            System.out.print("Login: ");
+            login = sc.nextLine();
 
-        if (!loginExiste(login))
-            break;
+            if (!loginExiste(login))
+                break;
 
-        System.out.println("Login já existe.");
+            System.out.println("Login já existe.");
+        }
+
+        System.out.print("Senha: ");
+        String senha = sc.nextLine();
+
+        String sql = "INSERT INTO profissionais(nome,id_conselho,login,senha) VALUES (?,?,?,?)";
+
+        try (
+                Connection con = Conexao.conectar();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, nome);
+            ps.setString(2, conselho);
+            ps.setString(3, login);
+            ps.setString(4, senha);
+
+            ps.executeUpdate();
+
+            System.out.println("Profissional cadastrado!");
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
     }
 
-    System.out.print("Senha: ");
-    String senha = sc.nextLine();
-
-    String sql =
-        "INSERT INTO profissionais(nome,id_conselho,login,senha) VALUES (?,?,?,?)";
-
-    try (
-        Connection con = Conexao.conectar();
-        PreparedStatement ps = con.prepareStatement(sql)
-    ) {
-
-        ps.setString(1, nome);
-        ps.setString(2, conselho);
-        ps.setString(3, login);
-        ps.setString(4, senha);
-
-        ps.executeUpdate();
-
-        System.out.println("Profissional cadastrado!");
-
-    } catch (Exception e) {
-        System.out.println("Erro: " + e.getMessage());
-    }
-}
-
-    // VERIFICAÇÃO (MENU TEM Q IDENTIFICAR SE É PCT OU PROFISSIONAL P/ MOSTRAR O MENU CORRETO)
+    // VERIFICAÇÃO (MENU TEM Q IDENTIFICAR SE É PCT OU PROFISSIONAL P/ MOSTRAR O
+    // MENU CORRETO)
     public static boolean verificarProfissional(String login, String senha) {
         String sql = "SELECT * FROM profissionais WHERE login = ? AND senha = ?";
         try (Connection conn = Conexao.conectar();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, login);
-                stmt.setString(2, senha);
-                ResultSet rs = stmt.executeQuery();
-                return rs.next(); 
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, login);
+            stmt.setString(2, senha);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
         } catch (Exception e) {
             if (e instanceof SQLException) {
                 System.out.println("Erro ao acessar o banco de dados: " + e.getMessage());
             } else {
                 System.out.println("Erro inesperado: " + e.getMessage());
             }
-           
+
         }
         return false;
     }
-// VERIFICA SE O LOGIN É DE PACIENTE
+
+    // VERIFICA SE O LOGIN É DE PACIENTE
     public static boolean verificarPaciente(String login, String senha) {
         String sql = "SELECT * FROM pacientes WHERE login = ? AND senha = ?";
         try (Connection conn = Conexao.conectar();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, login);
-                stmt.setString(2, senha);
-                ResultSet rs = stmt.executeQuery();
-                return rs.next(); 
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, login);
+            stmt.setString(2, senha);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
         } catch (Exception e) {
             System.out.println("Erro ao verificar paciente: " + e.getMessage());
         }
         return false;
     }
-// VERIFICAÇÃO PARA VER SE O LOGIN EXISTE NA HORA DE CADASTRAR UM NOVO PROFISSIONAL OU PACIENTE (NÃO PODE TER DOIS LOGINS IGUAIS)
+
+    // VERIFICAÇÃO PARA VER SE O LOGIN EXISTE NA HORA DE CADASTRAR UM NOVO
+    // PROFISSIONAL OU PACIENTE (NÃO PODE TER DOIS LOGINS IGUAIS)
     public static boolean loginExiste(String login) {
         String sql = "SELECT * FROM profissionais WHERE login = ?";
         try (Connection conn = Conexao.conectar();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, login);
-                ResultSet rs = stmt.executeQuery();
-                return rs.next(); 
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, login);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
         } catch (Exception e) {
             if (e instanceof SQLException) {
                 System.out.println("Erro ao acessar o banco de dados: " + e.getMessage());
@@ -157,6 +167,7 @@ public class Main {
 
         return false;
     }
+
     // MENU PROFISSIONAL
     public static void menuProfissional(String login) {
         while (true) {
@@ -171,15 +182,23 @@ public class Main {
             int op = sc.nextInt();
             sc.nextLine();
 
-            if (op == 1) listarPacientesParaEscolha();
-            else if (op == 2) cadastrarPaciente();
-            else if (op == 3) buscarPacientePorCPF();
-            else if (op == 4) buscarPacientePorNome();
-            else if (op == 5) cadastrarMedicacao();
-            else if (op == 6) return;
-            else System.out.println("Opção inválida!");
+            if (op == 1)
+                listarPacientesParaEscolha();
+            else if (op == 2)
+                cadastrarPaciente();
+            else if (op == 3)
+                buscarPacientePorCPF();
+            else if (op == 4)
+                buscarPacientePorNome();
+            else if (op == 5)
+                cadastrarMedicacao();
+            else if (op == 6)
+                return;
+            else
+                System.out.println("Opção inválida!");
         }
     }
+
     // Cadastro geral de medicações
     public static void cadastrarMedicacao() {
         System.out.println("\n=== CADASTRO DE MEDICACAO ===");
@@ -198,7 +217,7 @@ public class Main {
         int idMedicacao;
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, nome);
             ps.executeUpdate();
@@ -221,12 +240,14 @@ public class Main {
 
         cadastrarPosologiasDaMedicacao(idMedicacao, nome);
     }
-// BUSCAR ID DA MEDICAÇÃO POR NOME PARA VER SE ELA JÁ EXISTE NO BANCO E PARA PEGAR O ID NA HORA DE CADASTRAR AS POSOLOGIAS
+
+    // BUSCAR ID DA MEDICAÇÃO POR NOME PARA VER SE ELA JÁ EXISTE NO BANCO E PARA
+    // PEGAR O ID NA HORA DE CADASTRAR AS POSOLOGIAS
     public static Integer buscarIdMedicacaoPorNome(String nome) {
         String sql = "SELECT id FROM medicacoes WHERE nome = ?";
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, nome);
 
@@ -242,7 +263,8 @@ public class Main {
 
         return null;
     }
-// CADASTRO DE POSOLOGIAS DE UMA MEDICAÇÃO (EXEMPLO: 500 MG, 750 MG, 1 G)
+
+    // CADASTRO DE POSOLOGIAS DE UMA MEDICAÇÃO (EXEMPLO: 500 MG, 750 MG, 1 G)
     public static void cadastrarPosologiasDaMedicacao(int idMedicacao, String nomeMedicacao) {
         System.out.println("\n=== POSOLOGIAS DE " + nomeMedicacao + " ===");
         System.out.println("Cadastre as opcoes de posologia. Exemplo: 500 mg, 750 mg, 1 g.");
@@ -260,12 +282,13 @@ public class Main {
 
         System.out.println("A quantidade de vezes ao dia serao informadas ao fazer a prescricao para o paciente.");
     }
-// INSERIR POSOLOGIA NO BANCO
+
+    // INSERIR POSOLOGIA NO BANCO
     public static void inserirPosologia(int idMedicacao, String descricao) {
         String sql = "INSERT INTO posologias(medicacao_id, descricao) VALUES (?, ?)";
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, idMedicacao);
             ps.setString(2, descricao);
@@ -277,6 +300,7 @@ public class Main {
             System.out.println("Erro ao cadastrar posologia: " + e.getMessage());
         }
     }
+
     // BUSCAR PACIENTE POR CPF
     public static void buscarPacientePorCPF() {
         System.out.print("Digite o CPF do paciente: ");
@@ -285,7 +309,7 @@ public class Main {
         String sql = "SELECT * FROM pacientes WHERE cpf = ?";
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, cpf);
             ResultSet rs = ps.executeQuery();
@@ -302,6 +326,7 @@ public class Main {
             System.out.println("Erro: " + e.getMessage());
         }
     }
+
     // BUSCAR PACIENTE POR NOME
     public static void buscarPacientePorNome() {
         System.out.print("Digite o nome do paciente: ");
@@ -310,7 +335,7 @@ public class Main {
         String sql = "SELECT * FROM pacientes WHERE nome LIKE ?";
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, "%" + nome + "%");
             ResultSet rs = ps.executeQuery();
@@ -333,25 +358,26 @@ public class Main {
             System.out.println("Erro: " + e.getMessage());
         }
     }
+
     // MENU PROFISISONAL DO PACIENTE
     public static void menuPacienteProfissional(String cpf) {
 
-    while (true) {
+        while (true) {
 
-        System.out.println("\n=== MENU DO PACIENTE ===");
-        System.out.println("1 - Ver prescrições do paciente");
-        System.out.println("2 - Fazer prescrição");
-        System.out.println("3 - Excluir prescrição");
-        System.out.println("4 - Voltar");
-        System.out.print("Escolha: ");
+            System.out.println("\n=== MENU DO PACIENTE ===");
+            System.out.println("1 - Ver prescrições do paciente");
+            System.out.println("2 - Fazer prescrição");
+            System.out.println("3 - Excluir prescrição");
+            System.out.println("4 - Voltar");
+            System.out.print("Escolha: ");
 
-        int op = sc.nextInt();
-        sc.nextLine();
+            int op = sc.nextInt();
+            sc.nextLine();
 
-        switch (op) {
+            switch (op) {
 
-            case 1:
-                mostrarMedicacoes(cpf);
+                case 1:
+                    mostrarMedicacoes(cpf);
                     while (true) {
                         System.out.println("1 - Alterar prescrição");
                         System.out.println("2 - Voltar");
@@ -368,25 +394,27 @@ public class Main {
                             System.out.println("Opção inválida!");
                         }
                     }
-                break;
+                    break;
 
-            case 2:
-                cadastrarPrescricao(cpf);
-                break;
+                case 2:
+                    cadastrarPrescricao(cpf);
+                    break;
 
-            case 3:
-                excluirMedicacao(cpf);
-                break;
+                case 3:
+                    excluirMedicacao(cpf);
+                    break;
 
-            case 4:
-                return;
+                case 4:
+                    return;
 
-            default:
-                System.out.println("Opção inválida!");
+                default:
+                    System.out.println("Opção inválida!");
+            }
         }
     }
-}
-    // CADASTRO DE PRESCRIÇÃO DO PACIENTE (ESCOLHER MEDICAÇÃO, POSOLOGIA E VEZES AO DIA)
+
+    // CADASTRO DE PRESCRIÇÃO DO PACIENTE (ESCOLHER MEDICAÇÃO, POSOLOGIA E VEZES AO
+    // DIA)
     public static void cadastrarPrescricao(String cpf) {
         System.out.println("\n=== CADASTRO DE PRESCRICAO ===");
         List<Medicacao> medicacoes = buscarMedicacoesCadastradas();
@@ -405,7 +433,8 @@ public class Main {
         int opMedicacao = sc.nextInt();
         sc.nextLine();
 
-        if (opMedicacao == 0) return;
+        if (opMedicacao == 0)
+            return;
 
         if (opMedicacao < 1 || opMedicacao > medicacoes.size()) {
             System.out.println("Opcao invalida!");
@@ -429,7 +458,8 @@ public class Main {
         int opPosologia = sc.nextInt();
         sc.nextLine();
 
-        if (opPosologia == 0) return;
+        if (opPosologia == 0)
+            return;
 
         if (opPosologia < 1 || opPosologia > posologias.size()) {
             System.out.println("Opcao invalida!");
@@ -443,14 +473,16 @@ public class Main {
         Posologia posologia = posologias.get(opPosologia - 1);
         registrarPrescricao(cpf, medicacao.getId(), posologia.getId(), vezesAoDia);
     }
-// BUSCAR NO BANCO AS MEDICAÇÕES CADASTRADAS PARA MOSTRAR NA HORA DE CADASTRAR A PRESCRIÇÃO
+
+    // BUSCAR NO BANCO AS MEDICAÇÕES CADASTRADAS PARA MOSTRAR NA HORA DE CADASTRAR A
+    // PRESCRIÇÃO
     public static List<Medicacao> buscarMedicacoesCadastradas() {
         List<Medicacao> medicacoes = new ArrayList<>();
         String sql = "SELECT id, nome FROM medicacoes ORDER BY nome";
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = con.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 medicacoes.add(new Medicacao(rs.getInt("id"), rs.getString("nome")));
@@ -462,13 +494,15 @@ public class Main {
 
         return medicacoes;
     }
-// BUSCAR NO BANCO POSOLOGIAS DE UMA MEDICAÇÃO PARA MOSTRAR NA HORA DE CADASTRAR A PRESCRIÇÃO E NA HORA DE ALTERAR A PRESCRIÇÃO
+
+    // BUSCAR NO BANCO POSOLOGIAS DE UMA MEDICAÇÃO PARA MOSTRAR NA HORA DE CADASTRAR
+    // A PRESCRIÇÃO E NA HORA DE ALTERAR A PRESCRIÇÃO
     public static List<Posologia> buscarPosologias(int idMedicacao) {
         List<Posologia> posologias = new ArrayList<>();
         String sql = "SELECT id, descricao FROM posologias WHERE medicacao_id = ? ORDER BY descricao";
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, idMedicacao);
 
@@ -484,12 +518,13 @@ public class Main {
 
         return posologias;
     }
-// REGISTRAR PRESCRIÇÃO NO BANCO
+
+    // REGISTRAR PRESCRIÇÃO NO BANCO
     public static void registrarPrescricao(String cpf, int idMedicacao, int idPosologia, int vezesAoDia) {
         String sql = "INSERT INTO prescricoes(paciente_cpf, medicacao_id, posologia_id, vezes_ao_dia) VALUES (?,?,?,?)";
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, cpf);
             ps.setInt(2, idMedicacao);
@@ -504,7 +539,8 @@ public class Main {
             System.out.println("Erro: " + e.getMessage());
         }
     }
-    //ALTERAR MEDICACAO
+
+    // ALTERAR MEDICACAO
     public static void alterarMedicacao(String cpf) {
         System.out.print("Digite o codigo da prescricao a alterar: ");
         int idPrescricao = sc.nextInt();
@@ -545,7 +581,7 @@ public class Main {
         String sql = "UPDATE prescricoes SET posologia_id = ?, vezes_ao_dia = ? WHERE paciente_cpf = ? AND id_prescricao = ?";
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, posologias.get(opPosologia - 1).getId());
             ps.setInt(2, vezes);
@@ -554,19 +590,23 @@ public class Main {
 
             int affected = ps.executeUpdate();
 
-            if (affected > 0) System.out.println("Prescricao alterada!");
-            else System.out.println("Prescricao nao encontrada para esse paciente.");
+            if (affected > 0)
+                System.out.println("Prescricao alterada!");
+            else
+                System.out.println("Prescricao nao encontrada para esse paciente.");
 
         } catch (Exception e) {
             System.out.println("Erro: " + e.getMessage());
         }
     }
-// BUSCAR O ID DA MEDICAÇÃO DE UMA PRESCRIÇÃO PARA PODER PEGAR AS POSOLOGIAS DISPONÍVEIS NA ALTERAÇÃO
+
+    // BUSCAR O ID DA MEDICAÇÃO DE UMA PRESCRIÇÃO PARA PODER PEGAR AS POSOLOGIAS
+    // DISPONÍVEIS NA ALTERAÇÃO
     public static Integer buscarIdMedicacaoDaPrescricao(String cpf, int idPrescricao) {
         String sql = "SELECT medicacao_id FROM prescricoes WHERE paciente_cpf = ? AND id_prescricao = ?";
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, cpf);
             ps.setInt(2, idPrescricao);
@@ -583,7 +623,8 @@ public class Main {
 
         return null;
     }
-// EXCLUIR MEDICAÇÃO
+
+    // EXCLUIR MEDICAÇÃO
     private static void excluirMedicacao(String cpf) {
         System.out.print("Digite o codigo da prescricao a excluir: ");
         int idPrescricao = sc.nextInt();
@@ -591,133 +632,130 @@ public class Main {
         String sql = "DELETE FROM prescricoes WHERE paciente_cpf = ? AND id_prescricao = ?";
 
         try (Connection con = Conexao.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, cpf);
             ps.setInt(2, idPrescricao);
 
             int affected = ps.executeUpdate();
 
-            if (affected > 0) System.out.println("Prescricao excluida!");
-            else System.out.println("Prescricao nao encontrada para esse paciente.");
+            if (affected > 0)
+                System.out.println("Prescricao excluida!");
+            else
+                System.out.println("Prescricao nao encontrada para esse paciente.");
 
         } catch (Exception e) {
             System.out.println("Erro: " + e.getMessage());
         }
     }
+
     // CADASTRAR PACIENTE
     public static void cadastrarPaciente() {
 
-    System.out.println("\n=== CADASTRO DE PACIENTE ===");
+        System.out.println("\n=== CADASTRO DE PACIENTE ===");
 
-    System.out.print("Nome: ");
-    String nome = sc.nextLine();
+        System.out.print("Nome: ");
+        String nome = sc.nextLine();
 
-    System.out.print("CPF: ");
-    String cpf = sc.nextLine();
+        System.out.print("CPF: ");
+        String cpf = sc.nextLine();
 
-    String login;
+        String login;
 
-    while (true) {
+        while (true) {
 
-        System.out.print("Login: ");
-        login = sc.nextLine();
+            System.out.print("Login: ");
+            login = sc.nextLine();
 
-        if (!loginExiste(login))
-            break;
+            if (!loginExiste(login))
+                break;
 
-        System.out.println("Login já existe.");
-    }
-
-    System.out.print("Senha: ");
-    String senha = sc.nextLine();
-
-    String sql =
-        "INSERT INTO pacientes(nome,cpf,login,senha) VALUES (?,?,?,?)";
-
-    try (
-        Connection con = Conexao.conectar();
-        PreparedStatement ps = con.prepareStatement(sql)
-    ) {
-
-        ps.setString(1, nome);
-        ps.setString(2, cpf);
-        ps.setString(3, login);
-        ps.setString(4, senha);
-
-        ps.executeUpdate();
-
-        System.out.println("Paciente cadastrado!");
-
-    } catch (Exception e) {
-        System.out.println("Erro: " + e.getMessage());
-    }
-}
-    // LISTAR PACIENTES
-  public static void listarPacientesParaEscolha() {
-
-    ArrayList<Paciente> pacientes = new ArrayList<>();
-
-    String sql =
-            "SELECT nome, cpf FROM pacientes ORDER BY nome";
-
-    try (
-            Connection con = Conexao.conectar();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery()
-    ) {
-
-        while (rs.next()) {
-
-            pacientes.add(
-                    new Paciente(
-                            rs.getString("nome"),
-                            rs.getString("cpf")
-                    )
-            );
+            System.out.println("Login já existe.");
         }
 
-    } catch (Exception e) {
-        System.out.println("Erro ao buscar pacientes: "
-                + e.getMessage());
-        return;
+        System.out.print("Senha: ");
+        String senha = sc.nextLine();
+
+        String sql = "INSERT INTO pacientes(nome,cpf,login,senha) VALUES (?,?,?,?)";
+
+        try (
+                Connection con = Conexao.conectar();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, nome);
+            ps.setString(2, cpf);
+            ps.setString(3, login);
+            ps.setString(4, senha);
+
+            ps.executeUpdate();
+
+            System.out.println("Paciente cadastrado!");
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
     }
 
-    if (pacientes.isEmpty()) {
-        System.out.println("Nenhum paciente cadastrado.");
-        return;
+    // LISTAR PACIENTES
+    public static void listarPacientesParaEscolha() {
+
+        ArrayList<Paciente> pacientes = new ArrayList<>();
+
+        String sql = "SELECT nome, cpf FROM pacientes ORDER BY nome";
+
+        try (
+                Connection con = Conexao.conectar();
+                PreparedStatement ps = con.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+
+                pacientes.add(
+                        new Paciente(
+                                rs.getString("nome"),
+                                rs.getString("cpf")));
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro ao buscar pacientes: "
+                    + e.getMessage());
+            return;
+        }
+
+        if (pacientes.isEmpty()) {
+            System.out.println("Nenhum paciente cadastrado.");
+            return;
+        }
+
+        System.out.println("\n=== LISTA DE PACIENTES ===");
+
+        for (int i = 0; i < pacientes.size(); i++) {
+
+            System.out.println(
+                    (i + 1) + " - " +
+                            pacientes.get(i).getNome());
+        }
+
+        System.out.print(
+                "Escolha um paciente (0 para voltar): ");
+
+        int op = sc.nextInt();
+        sc.nextLine();
+
+        if (op == 0)
+            return;
+
+        if (op < 1 || op > pacientes.size()) {
+
+            System.out.println("Opção inválida!");
+            return;
+        }
+
+        String cpfPaciente = pacientes.get(op - 1).getCpf();
+
+        menuPacienteProfissional(cpfPaciente);
     }
 
-    System.out.println("\n=== LISTA DE PACIENTES ===");
-
-    for (int i = 0; i < pacientes.size(); i++) {
-
-        System.out.println(
-                (i + 1) + " - " +
-                        pacientes.get(i).getNome()
-        );
-    }
-
-    System.out.print(
-            "Escolha um paciente (0 para voltar): ");
-
-    int op = sc.nextInt();
-    sc.nextLine();
-
-    if (op == 0)
-        return;
-
-    if (op < 1 || op > pacientes.size()) {
-
-        System.out.println("Opção inválida!");
-        return;
-    }
-
-    String cpfPaciente =
-            pacientes.get(op - 1).getCpf();
-
-    menuPacienteProfissional(cpfPaciente);
-    }
     // MENU QUE PACIENTE VÊ AO SER AUTENTICADO (VER MEDICAÇÕES)
     public static void menuPaciente(String login) {
 
@@ -731,72 +769,74 @@ public class Main {
             int op = sc.nextInt();
             sc.nextLine();
 
-            if (op == 1) mostrarMedicacoes(cpfPaciente);
-            else if (op == 2) return;
-            else System.out.println("Opção inválida!");
+            if (op == 1)
+                mostrarMedicacoes(cpfPaciente);
+            else if (op == 2)
+                return;
+            else
+                System.out.println("Opção inválida!");
         }
     }
 
     public static String pegarCpfPaciente(String login) {
 
-    String sql =
-        "SELECT cpf FROM pacientes WHERE login = ?";
+        String sql = "SELECT cpf FROM pacientes WHERE login = ?";
 
-    try (
-        Connection con = Conexao.conectar();
-        PreparedStatement ps = con.prepareStatement(sql)
-    ) {
+        try (
+                Connection con = Conexao.conectar();
+                PreparedStatement ps = con.prepareStatement(sql)) {
 
-        ps.setString(1, login);
+            ps.setString(1, login);
 
-        ResultSet rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
 
-        if (rs.next())
-            return rs.getString("cpf");
+            if (rs.next())
+                return rs.getString("cpf");
 
-    } catch (Exception e) {
-        System.out.println("Erro: " + e.getMessage());
-    }
-
-    return "";
-}
-    // BUSCA NO BANCO MEDICAÇÕES DO PACIENTE EM FORMATO DE LISTA (NOME, POSOLOGIA, VEZES AO DIA)
-   public static List<Medicacao> buscarMedicacoes(String cpf) {
-    String sql =
-        "SELECT p.id_prescricao, m.nome, po.descricao, p.vezes_ao_dia " +
-        "FROM prescricoes p " +
-        "INNER JOIN medicacoes m ON m.id = p.medicacao_id " +
-        "INNER JOIN posologias po ON po.id = p.posologia_id " +
-        "WHERE p.paciente_cpf = ? " +
-        "ORDER BY p.data_prescricao DESC";
-    List<Medicacao> lista = new ArrayList<>();
-
-    try (Connection con = Conexao.conectar(); 
-         PreparedStatement ps = con.prepareStatement(sql)) {
-        
-        ps.setString(1, cpf);
-        
-        try (ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                // Criando o objeto com os dados do banco
-                Medicacao med = new Medicacao(
-                    rs.getInt("id_prescricao"),
-                    rs.getString("nome"),
-                    rs.getString("descricao"),
-                    rs.getInt("vezes_ao_dia")
-                );
-                // Adicionando o objeto na lista
-                lista.add(med);
-            }
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
         }
-    } catch (Exception e) {
-        System.out.println("Erro ao buscar medicações: " + e.getMessage());
+
+        return "";
     }
 
-    // Retorna a lista (vazia se não encontrar nada ou cheia se encontrar)
-    return lista;
-}
-// IMPRIME AS MEDICAÇÕES DO PACIENTE COM NOME, POSOLOGIA E VEZES AO DIA
+    // BUSCA NO BANCO MEDICAÇÕES DO PACIENTE EM FORMATO DE LISTA (NOME, POSOLOGIA,
+    // VEZES AO DIA)
+    public static List<Medicacao> buscarMedicacoes(String cpf) {
+        String sql = "SELECT p.id_prescricao, m.nome, po.descricao, p.vezes_ao_dia " +
+                "FROM prescricoes p " +
+                "INNER JOIN medicacoes m ON m.id = p.medicacao_id " +
+                "INNER JOIN posologias po ON po.id = p.posologia_id " +
+                "WHERE p.paciente_cpf = ? " +
+                "ORDER BY p.data_prescricao DESC";
+        List<Medicacao> lista = new ArrayList<>();
+
+        try (Connection con = Conexao.conectar();
+                PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, cpf);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    // Criando o objeto com os dados do banco
+                    Medicacao med = new Medicacao(
+                            rs.getInt("id_prescricao"),
+                            rs.getString("nome"),
+                            rs.getString("descricao"),
+                            rs.getInt("vezes_ao_dia"));
+                    // Adicionando o objeto na lista
+                    lista.add(med);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Erro ao buscar medicações: " + e.getMessage());
+        }
+
+        // Retorna a lista (vazia se não encontrar nada ou cheia se encontrar)
+        return lista;
+    }
+
+    // IMPRIME AS MEDICAÇÕES DO PACIENTE COM NOME, POSOLOGIA E VEZES AO DIA
     public static void mostrarMedicacoes(String cpf) {
         List<Medicacao> medicacoes = buscarMedicacoes(cpf);
 
