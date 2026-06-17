@@ -125,7 +125,7 @@ public class Main {
         }
         return false;
     }
-
+// VERIFICA SE O LOGIN É DE PACIENTE
     public static boolean verificarPaciente(String login, String senha) {
         String sql = "SELECT * FROM pacientes WHERE login = ? AND senha = ?";
         try (Connection conn = Conexao.conectar();
@@ -139,7 +139,7 @@ public class Main {
         }
         return false;
     }
-
+// VERIFICAÇÃO PARA VER SE O LOGIN EXISTE NA HORA DE CADASTRAR UM NOVO PROFISSIONAL OU PACIENTE (NÃO PODE TER DOIS LOGINS IGUAIS)
     public static boolean loginExiste(String login) {
         String sql = "SELECT * FROM profissionais WHERE login = ?";
         try (Connection conn = Conexao.conectar();
@@ -221,7 +221,7 @@ public class Main {
 
         cadastrarPosologiasDaMedicacao(idMedicacao, nome);
     }
-
+// BUSCAR ID DA MEDICAÇÃO POR NOME PARA VER SE ELA JÁ EXISTE NO BANCO E PARA PEGAR O ID NA HORA DE CADASTRAR AS POSOLOGIAS
     public static Integer buscarIdMedicacaoPorNome(String nome) {
         String sql = "SELECT id FROM medicacoes WHERE nome = ?";
 
@@ -242,7 +242,7 @@ public class Main {
 
         return null;
     }
-
+// CADASTRO DE POSOLOGIAS DE UMA MEDICAÇÃO (EXEMPLO: 500 MG, 750 MG, 1 G)
     public static void cadastrarPosologiasDaMedicacao(int idMedicacao, String nomeMedicacao) {
         System.out.println("\n=== POSOLOGIAS DE " + nomeMedicacao + " ===");
         System.out.println("Cadastre as opcoes de posologia. Exemplo: 500 mg, 750 mg, 1 g.");
@@ -258,9 +258,9 @@ public class Main {
             inserirPosologia(idMedicacao, descricao);
         }
 
-        System.out.println("As vezes ao dia serao informadas ao fazer a prescricao para o paciente.");
+        System.out.println("A quantidade de vezes ao dia serao informadas ao fazer a prescricao para o paciente.");
     }
-
+// INSERIR POSOLOGIA NO BANCO
     public static void inserirPosologia(int idMedicacao, String descricao) {
         String sql = "INSERT INTO posologias(medicacao_id, descricao) VALUES (?, ?)";
 
@@ -386,7 +386,7 @@ public class Main {
         }
     }
 }
-    // CADASTRO DE PRESCRIÇÃO
+    // CADASTRO DE PRESCRIÇÃO DO PACIENTE (ESCOLHER MEDICAÇÃO, POSOLOGIA E VEZES AO DIA)
     public static void cadastrarPrescricao(String cpf) {
         System.out.println("\n=== CADASTRO DE PRESCRICAO ===");
         List<Medicacao> medicacoes = buscarMedicacoesCadastradas();
@@ -443,7 +443,7 @@ public class Main {
         Posologia posologia = posologias.get(opPosologia - 1);
         registrarPrescricao(cpf, medicacao.getId(), posologia.getId(), vezesAoDia);
     }
-
+// BUSCAR NO BANCO AS MEDICAÇÕES CADASTRADAS PARA MOSTRAR NA HORA DE CADASTRAR A PRESCRIÇÃO
     public static List<Medicacao> buscarMedicacoesCadastradas() {
         List<Medicacao> medicacoes = new ArrayList<>();
         String sql = "SELECT id, nome FROM medicacoes ORDER BY nome";
@@ -462,7 +462,7 @@ public class Main {
 
         return medicacoes;
     }
-
+// BUSCAR NO BANCO POSOLOGIAS DE UMA MEDICAÇÃO PARA MOSTRAR NA HORA DE CADASTRAR A PRESCRIÇÃO E NA HORA DE ALTERAR A PRESCRIÇÃO
     public static List<Posologia> buscarPosologias(int idMedicacao) {
         List<Posologia> posologias = new ArrayList<>();
         String sql = "SELECT id, descricao FROM posologias WHERE medicacao_id = ? ORDER BY descricao";
@@ -484,7 +484,7 @@ public class Main {
 
         return posologias;
     }
-
+// REGISTRAR PRESCRIÇÃO NO BANCO
     public static void registrarPrescricao(String cpf, int idMedicacao, int idPosologia, int vezesAoDia) {
         String sql = "INSERT INTO prescricoes(paciente_cpf, medicacao_id, posologia_id, vezes_ao_dia) VALUES (?,?,?,?)";
 
@@ -561,7 +561,7 @@ public class Main {
             System.out.println("Erro: " + e.getMessage());
         }
     }
-
+// BUSCAR O ID DA MEDICAÇÃO DE UMA PRESCRIÇÃO PARA PODER PEGAR AS POSOLOGIAS DISPONÍVEIS NA ALTERAÇÃO
     public static Integer buscarIdMedicacaoDaPrescricao(String cpf, int idPrescricao) {
         String sql = "SELECT medicacao_id FROM prescricoes WHERE paciente_cpf = ? AND id_prescricao = ?";
 
@@ -583,7 +583,7 @@ public class Main {
 
         return null;
     }
-
+// EXCLUIR MEDICAÇÃO
     private static void excluirMedicacao(String cpf) {
         System.out.print("Digite o codigo da prescricao a excluir: ");
         int idPrescricao = sc.nextInt();
@@ -718,7 +718,7 @@ public class Main {
 
     menuPacienteProfissional(cpfPaciente);
     }
-    // MENU PACIENTE
+    // MENU QUE PACIENTE VÊ AO SER AUTENTICADO (VER MEDICAÇÕES)
     public static void menuPaciente(String login) {
 
         String cpfPaciente = pegarCpfPaciente(login);
@@ -760,7 +760,7 @@ public class Main {
 
     return "";
 }
-    // MOSTRAR MEDICAÇÕES DO PACIENTE
+    // BUSCA NO BANCO MEDICAÇÕES DO PACIENTE EM FORMATO DE LISTA (NOME, POSOLOGIA, VEZES AO DIA)
    public static List<Medicacao> buscarMedicacoes(String cpf) {
     String sql =
         "SELECT p.id_prescricao, m.nome, po.descricao, p.vezes_ao_dia " +
@@ -796,7 +796,7 @@ public class Main {
     // Retorna a lista (vazia se não encontrar nada ou cheia se encontrar)
     return lista;
 }
-
+// IMPRIME AS MEDICAÇÕES DO PACIENTE COM NOME, POSOLOGIA E VEZES AO DIA
     public static void mostrarMedicacoes(String cpf) {
         List<Medicacao> medicacoes = buscarMedicacoes(cpf);
 
